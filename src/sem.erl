@@ -128,16 +128,16 @@ pen( _T ) -> false.
 
 %% Context Independence %% =================================
 
--spec pindep( X ) -> boolean()                                                  % (97)
+-spec pindep( X ) -> boolean()                                                  % (96)
 when X :: #{string() => [expr()]} | [expr()] | expr().
 
-pindep( Fa ) when is_map( Fa ) -> pindep( maps:values( Fa ) );                  % (98)
-pindep( X ) when is_list( X )  -> lists:all( fun pindep/1, X );                 % (99,100)
-pindep( {str, _} )             -> true;                                         % (101)
-pindep( {select, _, _} )       -> true;                                         % (102)
-pindep( {cnd, Xc, Xt, Xe} )    ->                                               % (103)
+pindep( Fa ) when is_map( Fa ) -> pindep( maps:values( Fa ) );                  % (97)
+pindep( X ) when is_list( X )  -> lists:all( fun pindep/1, X );                 % (98,99)
+pindep( {str, _} )             -> true;                                         % (100)
+pindep( {select, _, _} )       -> true;                                         % (101)
+pindep( {cnd, Xc, Xt, Xe} )    ->                                               % (102)
   pindep( Xc ) andalso pindep( Xt ) andalso pindep( Xe );
-pindep( {app, _, _, Fa} )      -> pindep( Fa );                                 % (104)
+pindep( {app, _, _, Fa} )      -> pindep( Fa );                                 % (103)
 pindep( _ )                    -> false.
 
 
@@ -196,32 +196,32 @@ step( {cnd, Xc=[_|_], Xt, Xe}, Theta ) ->
   end;
 
 % Application
-step( {app, C, {var, N}, Fa}, {_Rho, _Mu, Gamma, _Omega} ) ->                   % (105)
+step( {app, C, {var, N}, Fa}, {_Rho, _Mu, Gamma, _Omega} ) ->                   % (104)
   [{app, C, maps:get( N, Gamma ), Fa}];
 
 step( X={app, C, Lambda={lam, S={sign, Lo, _Li}, B}, Fa},
       Theta={_Rho, Mu, Gamma, Omega} ) ->
   case psing( X ) of
-    false -> enum_app( {app, C, Lambda, step_assoc( Fa, Theta )} );             % (106)
+    false -> enum_app( {app, C, Lambda, step_assoc( Fa, Theta )} );             % (105)
     true  ->
       case B of
         {forbody, _L, _Z} ->
           case pfinal( Fa ) of
-            false -> [{app, C, Lambda, step_assoc( Fa, Theta )}];               % (107)
-            true  -> [{select, C, apply( Mu, [X] )}]                            % (108)
+            false -> [{app, C, Lambda, step_assoc( Fa, Theta )}];               % (106)
+            true  -> [{select, C, apply( Mu, [X] )}]                            % (107)
           end;
         {natbody, Fb} ->
           case pindep( Fa ) of
-            false -> [{app, C, Lambda, step_assoc( Fa, Theta )}];               % (109)
+            false -> [{app, C, Lambda, step_assoc( Fa, Theta )}];               % (108)
             true  ->                                              
               {param, N, Pl} = lists:nth( C, Lo ),
               #{N := V0} = Fb,
               V1 = step( V0, {maps:merge( Fb, Fa ), Mu, Gamma, Omega} ),
               case pindep( V1 ) of
-                false -> [{app, C, {lam, S, {natbody, Fb#{ N => V1}}}, Fa}];    % (110)
+                false -> [{app, C, {lam, S, {natbody, Fb#{ N => V1}}}, Fa}];    % (109)
                 true  ->
                   case Pl orelse length( V1 ) =:= 1 of
-                    true  -> V1;                                                % (111)
+                    true  -> V1;                                                % (110)
                     false -> error( output_sign_mismatch )
                   end
               end
@@ -256,25 +256,26 @@ enum( Z ) ->
 -spec estep( Z::[argpair()] ) -> [argpair()].                                   % (50)
 
 estep( Z ) ->                                                                   % (51,52)
-  lists:flatmap( fun( {Li, F} ) -> estep( Li, F ) end, Z ).
+  lists:flatmap( fun( {Li, F} ) -> estep_param_lst( Li, F ) end, Z ).
 
 -spec estep_param_lst( Li, F ) -> [argpair()]                                   % (83)
 when Li::[inparam()],
      F::#{string() => [expr()]}.
 
-estep( [], F ) -> [{[], F}];                                                    % (84)
-estep( [H={param, _N, Pl}|T], F ) when Pl -> aug( estep( T, F ), H );           % (85)
-estep( L=[H={param, N, _Pl}|T], F ) ->
+estep_param_lst( [], F ) -> [{[], F}];                                          % (84)
+estep_param_lst( [H={param, _N, Pl}|T], F ) when Pl ->                          % (85)
+  aug( estep_param_lst( T, F ), H );
+estep_param_lst( L=[H={param, N, _Pl}|T], F ) ->
   #{N := V} = F,
   case pen( V ) of
     false -> [{L, F}];                                                          % (86)
     true  ->
       case length( V ) of
-        1 -> aug( estep( T, F ), H );                                           % (87)
+        1 -> aug( estep_param_lst( T, F ), H );                                           % (87)
         _ -> [{L, F#{N => [X]}} || X <- V]                                      % (88)
       end
   end;
-estep( L=[H={correl, Lc}|T], F ) when length( Lc ) > 1 ->
+estep_param_lst( L=[H={correl, Lc}|T], F ) when length( Lc ) > 1 ->
   Pen = pen( [maps:get( N, F ) || N <- Lc] ),
   case Pen of
     false -> [{L, F}];                                                          % (89)

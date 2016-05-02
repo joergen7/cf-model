@@ -472,6 +472,22 @@ app_select_param_is_enumerated_test() ->
   X = sem:eval( B, ?THETA0 ), 
   ?assertMatch( [{select, 1, _}, {select, 1, _}], X ).
 
+app_str_is_evaluated_while_select_remains_test() ->
+  Sign1 = {sign, [{param, "out", false}], []},
+  Lam1 = {lam, Sign1, {forbody, bash, "shalala"}},
+  Sign2 = {sign, [{param, "out", false}],
+                 [{param, "inp", false}]},
+  Body2 = {forbody, bash, "lalala"},
+  Lam2 = {lam, Sign2, Body2},
+  Fut = {fut, 1234, [{param, "y", false}]},
+  Select = {select, 1, Fut},
+  Str = {str, "blub"},
+  A = [Str, Select],
+  B = [{app, 1, Lam2, #{"inp" => A}}],
+  X = sem:eval( B, ?THETA0 ), 
+  ?assertMatch( [{select, 1, {fut, _, [{param, "out", false}]}},
+                 {app, 1, Lam2, #{"inp" := [Select]}}], X ).
+
 
 
 % deftask find_clusters( cls( File ) : state( File ) ) {
