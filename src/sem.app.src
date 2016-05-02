@@ -1,0 +1,14 @@
+{application, sem,
+ [
+  {description, "An Erlang sem library"},
+  {vsn, "1"},
+  {modules, [
+             sem
+            ]},
+  {registered, []},
+  {applications, [
+                  kernel,
+                  stdlib
+                 ]},
+  {env, []}
+ ]}.
