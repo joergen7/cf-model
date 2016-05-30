@@ -20,56 +20,56 @@
 
 str_should_be_final_test() ->
   S = {str, "blub"},
-  ?assert( sem:pfinal( S ) ).
+  ?assert( sem:pnormal( S ) ).
 
 app_should_not_be_final_test() ->
   A = {app, 1, {var, "f"}, #{}},
-  ?assertNot( sem:pfinal( A ) ).
+  ?assertNot( sem:pnormal( A ) ).
 
 cnd_should_not_be_final_test() ->
   C = {cnd, [{str, "a"}], [{str, "b"}], [{str, "c"}]},
-  ?assertNot( sem:pfinal( C ) ).
+  ?assertNot( sem:pnormal( C ) ).
 
 select_should_not_be_final_test() ->
   Fut = {fut, 1234, [{param, "out", false}]},
   S = {select, 1, Fut},
-  ?assertNot( sem:pfinal( S ) ).
+  ?assertNot( sem:pnormal( S ) ).
 
 var_should_not_be_final_test() ->
   V = {var, "x"},
-  ?assertNot( sem:pfinal( V ) ).
+  ?assertNot( sem:pnormal( V ) ).
 
 all_str_should_be_final_test() ->
   X = [{str, "bla"}, {str, "blub"}],
-  ?assert( sem:pfinal( X ) ).
+  ?assert( sem:pnormal( X ) ).
 
 empty_lst_should_be_final_test() ->
-  ?assert( sem:pfinal( [] ) ).
+  ?assert( sem:pnormal( [] ) ).
 
 one_var_lst_should_not_be_final_test() ->
   X = [{str, "bla"}, {str, "blub"}, {var, "x"}],
-  ?assertNot( sem:pfinal( X ) ).
+  ?assertNot( sem:pnormal( X ) ).
 
 all_var_lst_should_not_be_final_test() ->
   X = [{var, "bla"}, {var, "blub"}, {var, "x"}],
-  ?assertNot( sem:pfinal( X ) ).
+  ?assertNot( sem:pnormal( X ) ).
 
 empty_map_should_be_final_test() ->
-  ?assert( sem:pfinal( #{} ) ).
+  ?assert( sem:pnormal( #{} ) ).
 
 only_str_map_should_be_final_test() ->
   M = #{"x" => [{str, "bla"}, {str, "blub"}], "y" => [{str, "shalala"}]},
-  ?assert( sem:pfinal( M ) ).
+  ?assert( sem:pnormal( M ) ).
 
 one_var_map_should_not_be_final_test() ->
   M = #{"x" => [{str, "bla"}, {str, "blub"}],
         "y" => [{str, "shalala"}, {var, "x"}]},
-  ?assertNot( sem:pfinal( M ) ).
+  ?assertNot( sem:pnormal( M ) ).
 
-all_var_map_should_not_be_final_test() ->
+all_var_map_should_not_be_in_normal_form_test() ->
   M = #{"x" => [{var, "bla"}, {var, "blub"}],
         "y" => [{var, "shalala"}, {var, "x"}]},
-  ?assertNot( sem:pfinal( M ) ).
+  ?assertNot( sem:pnormal( M ) ).
 
 %% Singularity %%
 
@@ -473,8 +473,6 @@ app_select_param_is_enumerated_test() ->
   ?assertMatch( [{select, 1, _}, {select, 1, _}], X ).
 
 app_str_is_evaluated_while_select_remains_test() ->
-  Sign1 = {sign, [{param, "out", false}], []},
-  Lam1 = {lam, Sign1, {forbody, bash, "shalala"}},
   Sign2 = {sign, [{param, "out", false}],
                  [{param, "inp", false}]},
   Body2 = {forbody, bash, "lalala"},
@@ -487,8 +485,6 @@ app_str_is_evaluated_while_select_remains_test() ->
   X = sem:eval( B, ?THETA0 ), 
   ?assertMatch( [{select, 1, {fut, _, [{param, "out", false}]}},
                  {app, 1, Lam2, #{"inp" := [Select]}}], X ).
-
-
 
 % deftask find_clusters( cls( File ) : state( File ) ) {
 %   cls = state;
@@ -520,49 +516,65 @@ enum_app_without_app_does_nothing_test() ->
   B = {forbody, bash, "shalala"},
   Lam = {lam, S, B},
   App = {app, 1, Lam, #{}},
-  ?assertEqual( [App], sem:enum_app( App ) ).
+  ?assertEqual( [App], sem:enum( App ) ).
 
 %% Enumeration Rules %%
 
 %% Augmentation %%
 
-can_aug_argpair_with_param_test() ->
+can_aug_with_param_test() ->
+  Lo = [{param, "out", false}],
+  B = {forbody, bash, "blub"},
   L0 = [{param, "b", false}, {param, "c", false}],
   F = #{"a" => [{str, "1"}], "b" => [{str, "2"}], "c" => [{str, "3"}]},
-  Pair = {L0, F},
+  Pair = {app, 1, {lam, {sign, Lo, L0}, B}, F},
   I = {param, "a", false},
   L1 = [I|L0],
-  ?assertEqual( {L1, F}, sem:aug_argpair( Pair, I ) ).
+  ?assertEqual( {app, 1, {lam, {sign, Lo, L1}, B}, F}, sem:aug( Pair, I ) ).
 
-can_aug_argpair_with_correl_test() ->
+can_aug_with_correl_test() ->
+  Lo = [{param, "out", false}],
+  B = {forbody, bash, "blub"},
   L0 = [{param, "b", false}, {param, "c", false}],
   F = #{"a1" => [{str, "11"}],
         "a2" => [{str, "12"}],
         "b" => [{str, "2"}],
         "c" => [{str, "3"}]},
-  Pair = {L0, F},
+  Pair = {app, 1, {lam, {sign, Lo, L0}, B}, F},
   I = {correl, ["a1", "a2"]},
   L1 = [{param, "a1", false}, {param, "a2", false}|L0],
-  ?assertEqual( {L1, F}, sem:aug_argpair( Pair, I ) ).
+  ?assertEqual( {app, 1, {lam, {sign, Lo, L1}, B}, F}, sem:aug( Pair, I ) ).
 
 can_augment_empty_argpairlist_with_param_test() ->
+  Lo = [{param, "out", false}],
+  B = {forbody, bash, "blub"},
   F1 = #{"a" => [{str, "x1"}]},
   F2 = #{"a" => [{str, "y1"}]},
-  PairList = [{[], F1}, {[], F2}],
+  PairList = [{app, 1, {lam, {sign, Lo, []}, B}, F1},
+              {app, 1, {lam, {sign, Lo, []}, B}, F2}],
   I = {param, "a", false},
   L1 = [{param, "a", false}],
-  ?assertEqual( [{L1, F1}, {L1, F2}], sem:aug( PairList, I ) ).
+  X = [{app, 1, {lam, {sign, Lo, L1}, B}, F1},
+       {app, 1, {lam, {sign, Lo, L1}, B}, F2}],
+  ?assertEqual( X, sem:aug_lst( PairList, I ) ).
 
 can_augment_argpairlist_with_param_test() ->
+  Lo = [{param, "out", false}],
+  B = {forbody, bash, "blub"},
   L0 = [{param, "b", false}, {param, "c", false}],
   F1 = #{"a" => [{str, "x1"}], "b" => [{str, "x2"}], "c" => [{str, "x3"}]},
   F2 = #{"a" => [{str, "y1"}], "b" => [{str, "y2"}], "c" => [{str, "y3"}]},
-  PairList = [{L0, F1}, {L0, F2}],
+  PairList = [{app, 1, {lam, {sign, Lo, L0}, B}, F1},
+              {app, 1, {lam, {sign, Lo, L0}, B}, F2}],
   I = {param, "a", false},
   L1 = [{param, "a", false}|L0],
-  ?assertEqual( [{L1, F1}, {L1, F2}], sem:aug( PairList, I ) ).
+  X = [{app, 1, {lam, {sign, Lo, L1}, B}, F1},
+       {app, 1, {lam, {sign, Lo, L1}, B}, F2}],
+  ?assertEqual( X, sem:aug_lst( PairList, I ) ).
 
 can_augment_argpairlist_with_correl_test() ->
+  Lo = [{param, "out", false}],
+  B = {forbody, bash, "blub"},
   L0 = [{param, "b", false}, {param, "c", false}],
   F1 = #{"a1" => [{str, "x11"}],
          "a2" => [{str, "x12"}],
@@ -572,10 +584,13 @@ can_augment_argpairlist_with_correl_test() ->
          "a2" => [{str, "y12"}],
          "b" => [{str, "y2"}],
          "c" => [{str, "y3"}]},
-  PairList = [{L0, F1}, {L0, F2}],
+  PairList = [{app, 1, {lam, {sign, Lo, L0}, B}, F1},
+              {app, 1, {lam, {sign, Lo, L0}, B}, F2}],
   I = {correl, ["a1", "a2"]},
   L1 = [{param, "a1", false}, {param, "a2", false}|L0],
-  ?assertEqual( [{L1, F1}, {L1, F2}], sem:aug( PairList, I ) ).
+  X = [{app, 1, {lam, {sign, Lo, L1}, B}, F1},
+       {app, 1, {lam, {sign, Lo, L1}, B}, F2}],
+  ?assertEqual( X, sem:aug_lst( PairList, I ) ).
 
 %% Correlation %%
 
@@ -592,3 +607,38 @@ corrstep_should_separate_first_value_two_test() ->
   Y = {#{"a" => [{str, "1"}], "b" => [{str, "A"}]}, #{"a" => [{str, "2"}, {str, "3"}], "b" => [{str, "B"}, {str, "C"}]}},
   X = sem:corrstep( Lc, F0, F0 ),
   ?assertEqual( Y, X ).
+
+
+christopher_test() ->
+  X = [{app,1,
+              {lam,{sign,[{param,"somaticVCF",false}],
+                         [{param,"tumor",false},
+                          {param,"ctrlBam",true}]},
+                   {natbody,#{"somaticVCF" => [{app,1,
+                                    {var,"compareToCTRL"},
+                                    #{"ctrlBam" => [{var,"ctrlBam"}],
+                                      "tumorParts" => [{var,"tumorBam"}]}}],
+                              "tumorBam" => [{app,1,
+                                    {var,"bwa-mem"},
+                                    #{"fastq" => [{var,"tumor"}]}}]}}},
+              #{"ctrlBam" => [{select,1,{fut,1,[{param,"bamout",false}]}}],
+                "tumor" => [{str,"data/CH_JK_001/CH_JK_001_R1_001.fastq.gz"}]}}],
+
+  Gamma = #{"compareToCTRL" => {lam, {sign, [{param, "somaticVCF", false}],
+                                            [{param, "tumorParts", true},
+                                             {param, "ctrlBam", false}]},
+                                     {forbody, bash, "blub"}},
+            "bwa-mem" => {lam, {sign, [{param, "bamout", false}],
+                                      [{param, "fastq", false}]},
+                                {forbody, bash, "bla"}}
+                                     },
+  Theta = {#{}, fun sem:mu/1, Gamma, #{}},
+
+  ?assertMatch(
+    [{app,1,
+          {lam,{sign,[{param,"somaticVCF",false}],
+                     [{param,"tumorParts",true},{param,"ctrlBam",false}]},
+               {forbody,bash,"blub"}},
+          #{"ctrlBam" := [{select,1,{fut,_,[{param,"bamout",false}]}}],
+            "tumorParts" := [{select,1,{fut,_,[{param,"bamout",false}]}}]}}],
+    sem:eval( X, Theta ) ).
