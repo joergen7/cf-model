@@ -28,8 +28,16 @@
 
 -spec mu( A::sem:app() ) -> sem:fut().
 
-mu( {app, _C, {lam, {sign, Lo, _Li}, _B}, _Fa} ) ->
-  {fut, random:uniform( 1000000000 ), Lo}.
+mu( {app, _C, {lam, {sign, Lo, Li}, _B}, _Fa} ) ->
+
+  IsParam = fun( {param, _N, _Pl} ) -> true;
+               ( {correl, _Lc} )     -> false
+            end,
+
+  case lists:all( IsParam, Li ) of
+    false -> error( invalid_correl );
+    true  -> {fut, random:uniform( 1000000000 ), Lo}
+  end.
 
 
 %% =========================================================
