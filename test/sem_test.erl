@@ -16,57 +16,57 @@
 %% Predicates
 %% =============================================================================
 
-%% Finality %%
+%% Normal Form %%
 
-str_should_be_final_test() ->
+str_should_be_in_normal_test() ->
   S = {str, "blub"},
   ?assert( sem:pnormal( S ) ).
 
-app_should_not_be_final_test() ->
+app_should_not_be_normal_test() ->
   A = {app, 1, {var, "f"}, #{}},
   ?assertNot( sem:pnormal( A ) ).
 
-cnd_should_not_be_final_test() ->
+cnd_should_not_be_normal_test() ->
   C = {cnd, [{str, "a"}], [{str, "b"}], [{str, "c"}]},
   ?assertNot( sem:pnormal( C ) ).
 
-select_should_not_be_final_test() ->
+select_should_not_be_normal_test() ->
   Fut = {fut, 1234, [{param, "out", false}]},
   S = {select, 1, Fut},
   ?assertNot( sem:pnormal( S ) ).
 
-var_should_not_be_final_test() ->
+var_should_not_be_normal_test() ->
   V = {var, "x"},
   ?assertNot( sem:pnormal( V ) ).
 
-all_str_should_be_final_test() ->
+all_str_should_be_normal_test() ->
   X = [{str, "bla"}, {str, "blub"}],
   ?assert( sem:pnormal( X ) ).
 
-empty_lst_should_be_final_test() ->
+empty_lst_should_be_normal_test() ->
   ?assert( sem:pnormal( [] ) ).
 
-one_var_lst_should_not_be_final_test() ->
+one_var_lst_should_not_be_normal_test() ->
   X = [{str, "bla"}, {str, "blub"}, {var, "x"}],
   ?assertNot( sem:pnormal( X ) ).
 
-all_var_lst_should_not_be_final_test() ->
+all_var_lst_should_not_be_normal_test() ->
   X = [{var, "bla"}, {var, "blub"}, {var, "x"}],
   ?assertNot( sem:pnormal( X ) ).
 
-empty_map_should_be_final_test() ->
+empty_map_should_be_normal_test() ->
   ?assert( sem:pnormal( #{} ) ).
 
-only_str_map_should_be_final_test() ->
+only_str_map_should_be_normal_test() ->
   M = #{"x" => [{str, "bla"}, {str, "blub"}], "y" => [{str, "shalala"}]},
   ?assert( sem:pnormal( M ) ).
 
-one_var_map_should_not_be_final_test() ->
+one_var_map_should_not_be_normal_test() ->
   M = #{"x" => [{str, "bla"}, {str, "blub"}],
         "y" => [{str, "shalala"}, {var, "x"}]},
   ?assertNot( sem:pnormal( M ) ).
 
-all_var_map_should_not_be_in_normal_form_test() ->
+all_var_map_should_not_be_normal_test() ->
   M = #{"x" => [{var, "bla"}, {var, "blub"}],
         "y" => [{var, "shalala"}, {var, "x"}]},
   ?assertNot( sem:pnormal( M ) ).
@@ -545,7 +545,7 @@ can_aug_with_correl_test() ->
   L1 = [{param, "a1", false}, {param, "a2", false}|L0],
   ?assertEqual( {app, 1, {lam, {sign, Lo, L1}, B}, F}, sem:aug( Pair, I ) ).
 
-can_augment_empty_argpairlist_with_param_test() ->
+can_augment_empty_inparamlst_with_param_test() ->
   Lo = [{param, "out", false}],
   B = {forbody, bash, "blub"},
   F1 = #{"a" => [{str, "x1"}]},
@@ -558,7 +558,7 @@ can_augment_empty_argpairlist_with_param_test() ->
        {app, 1, {lam, {sign, Lo, L1}, B}, F2}],
   ?assertEqual( X, sem:aug_lst( PairList, I ) ).
 
-can_augment_argpairlist_with_param_test() ->
+can_augment_inparamlst_with_param_test() ->
   Lo = [{param, "out", false}],
   B = {forbody, bash, "blub"},
   L0 = [{param, "b", false}, {param, "c", false}],
@@ -572,7 +572,7 @@ can_augment_argpairlist_with_param_test() ->
        {app, 1, {lam, {sign, Lo, L1}, B}, F2}],
   ?assertEqual( X, sem:aug_lst( PairList, I ) ).
 
-can_augment_argpairlist_with_correl_test() ->
+can_augment_inparamlst_with_correl_test() ->
   Lo = [{param, "out", false}],
   B = {forbody, bash, "blub"},
   L0 = [{param, "b", false}, {param, "c", false}],
@@ -662,7 +662,7 @@ christopher_test() ->
           {lam,{sign,[{param,"somaticVCF",false}],
                      [{param,"tumorParts",true},{param,"ctrlBam",false}]},
                {forbody,bash,"blub"}},
-          #{"ctrlBam" := [{select,1,{fut,_,[{param,"bamout",false}]}}],
+          #{"ctrlBam" := [{select,1,{fut,1,[{param,"bamout",false}]}}],
             "tumorParts" := [{select,1,{fut,_,[{param,"bamout",false}]}}]}}],
     sem:eval( X, Theta ) ).
 
