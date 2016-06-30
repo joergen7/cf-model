@@ -511,7 +511,7 @@ identity_fn_should_resolve_var_test() ->
 
 %% The enum Function %%
 
-enum_app_without_app_does_nothing_test() ->
+enum_without_app_does_nothing_test() ->
   S = {sign, [{param, "out", false}], []},
   B = {forbody, bash, "shalala"},
   Lam = {lam, S, B},
@@ -527,10 +527,10 @@ can_aug_with_param_test() ->
   B = {forbody, bash, "blub"},
   L0 = [{param, "b", false}, {param, "c", false}],
   F = #{"a" => [{str, "1"}], "b" => [{str, "2"}], "c" => [{str, "3"}]},
-  Pair = {app, 1, {lam, {sign, Lo, L0}, B}, F},
+  App = {app, 1, {lam, {sign, Lo, L0}, B}, F},
   I = {param, "a", false},
   L1 = [I|L0],
-  ?assertEqual( {app, 1, {lam, {sign, Lo, L1}, B}, F}, sem:aug( Pair, I ) ).
+  ?assertEqual( {app, 1, {lam, {sign, Lo, L1}, B}, F}, sem:aug( App, I ) ).
 
 can_aug_with_correl_test() ->
   Lo = [{param, "out", false}],
@@ -540,10 +540,10 @@ can_aug_with_correl_test() ->
         "a2" => [{str, "12"}],
         "b" => [{str, "2"}],
         "c" => [{str, "3"}]},
-  Pair = {app, 1, {lam, {sign, Lo, L0}, B}, F},
+  App = {app, 1, {lam, {sign, Lo, L0}, B}, F},
   I = {correl, ["a1", "a2"]},
   L1 = [{param, "a1", false}, {param, "a2", false}|L0],
-  ?assertEqual( {app, 1, {lam, {sign, Lo, L1}, B}, F}, sem:aug( Pair, I ) ).
+  ?assertEqual( {app, 1, {lam, {sign, Lo, L1}, B}, F}, sem:aug( App, I ) ).
 
 can_augment_empty_inparamlst_with_param_test() ->
   Lo = [{param, "out", false}],
@@ -564,13 +564,13 @@ can_augment_inparamlst_with_param_test() ->
   L0 = [{param, "b", false}, {param, "c", false}],
   F1 = #{"a" => [{str, "x1"}], "b" => [{str, "x2"}], "c" => [{str, "x3"}]},
   F2 = #{"a" => [{str, "y1"}], "b" => [{str, "y2"}], "c" => [{str, "y3"}]},
-  PairList = [{app, 1, {lam, {sign, Lo, L0}, B}, F1},
-              {app, 1, {lam, {sign, Lo, L0}, B}, F2}],
+  AppList = [{app, 1, {lam, {sign, Lo, L0}, B}, F1},
+             {app, 1, {lam, {sign, Lo, L0}, B}, F2}],
   I = {param, "a", false},
   L1 = [{param, "a", false}|L0],
   X = [{app, 1, {lam, {sign, Lo, L1}, B}, F1},
        {app, 1, {lam, {sign, Lo, L1}, B}, F2}],
-  ?assertEqual( X, sem:aug_lst( PairList, I ) ).
+  ?assertEqual( X, sem:aug_lst( AppList, I ) ).
 
 can_augment_inparamlst_with_correl_test() ->
   Lo = [{param, "out", false}],
@@ -584,13 +584,13 @@ can_augment_inparamlst_with_correl_test() ->
          "a2" => [{str, "y12"}],
          "b" => [{str, "y2"}],
          "c" => [{str, "y3"}]},
-  PairList = [{app, 1, {lam, {sign, Lo, L0}, B}, F1},
-              {app, 1, {lam, {sign, Lo, L0}, B}, F2}],
+  AppList = [{app, 1, {lam, {sign, Lo, L0}, B}, F1},
+             {app, 1, {lam, {sign, Lo, L0}, B}, F2}],
   I = {correl, ["a1", "a2"]},
   L1 = [{param, "a1", false}, {param, "a2", false}|L0],
   X = [{app, 1, {lam, {sign, Lo, L1}, B}, F1},
        {app, 1, {lam, {sign, Lo, L1}, B}, F2}],
-  ?assertEqual( X, sem:aug_lst( PairList, I ) ).
+  ?assertEqual( X, sem:aug_lst( AppList, I ) ).
 
 %% Correlation %%
 

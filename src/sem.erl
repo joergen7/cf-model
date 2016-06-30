@@ -163,9 +163,8 @@ when X     :: #{string() => [expr()]} | [expr()] | expr(),
      Theta :: ctx().
 
 % Argument map
-
-step( F, Theta ) when is_map( F ) ->                                            % (23,24)
-  maps:map( fun( _, X ) -> step( X, Theta ) end, F );
+step( Fa, Theta ) when is_map( Fa ) ->                                          % (23,24)
+  maps:map( fun( _, X ) -> step( X, Theta ) end, Fa );
 
 % Expression List
 step( X, Theta ) when is_list( X ) ->                                           % (25,26)
@@ -214,7 +213,7 @@ step( X={app, C, Lambda={lam, S={sign, Lo, _}, B}, Fa},
               #{N := V0} = Fb,
               V1 = step( V0, {maps:merge( Fb, Fa ), Mu, Gamma, Omega} ),
               case pindep( V1 ) of
-                false -> [{app, C, {lam, S, {natbody, Fb#{ N => V1}}}, Fa}];    % (93)
+                false -> [{app, C, {lam, S, {natbody, Fb#{ N => V1 }}}, Fa}];   % (93)
                 true  ->
                   case Pl orelse length( V1 ) =:= 1 of
                     true  -> V1;                                                % (94)
@@ -310,7 +309,6 @@ when Lc     :: [string()],
      Fminus :: #{string() => [expr()]}.
 
 corrstep( [], Fstar, Fminus )    -> {Fstar, Fminus};                            % (59)
-
 corrstep( [H|T], Fstar, Fminus ) ->                                             % (60)
   #{H := [A|B]} = Fminus,
   corrstep( T, Fstar#{H => [A]}, Fminus#{H => B} ).
